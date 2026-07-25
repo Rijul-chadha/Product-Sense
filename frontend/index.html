@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StyleCast — Product Scanner</title>
+  <link rel="stylesheet" href="/static/style.css?v=4"/>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">✦ StyleCast</div>
+    <p class="tagline">Scan any beauty product. Get the truth.</p>
+  </header>
+
+  <!-- SCAN -->
+  <section id="scan-section" class="card">
+    <h2>Scan a Product</h2>
+    <div class="scan-buttons">
+      <button class="btn-primary"   onclick="openCamera()">📷 Use Camera</button>
+      <button class="btn-secondary" onclick="document.getElementById('file-upload').click()">🖼 Upload Image</button>
+    </div>
+    <input type="file" id="file-upload" accept="image/*" style="display:none" onchange="handleUpload(event)"/>
+    <div class="divider">or search by name</div>
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="e.g. Dior Lip Glow..."/>
+      <button class="btn-primary" onclick="searchByName()">Search</button>
+    </div>
+    <video id="camera-preview" autoplay playsinline style="display:none; width:100%; border-radius:14px; margin-top:16px;"></video>
+    <canvas id="snap-canvas" style="display:none"></canvas>
+    <button id="capture-btn" style="display:none" class="btn-primary" onclick="capturePhoto()">📸 Capture</button>
+  </section>
+
+  <!-- LOADING -->
+  <section id="loading-section" style="display:none;" class="card" style="text-align:center;">
+    <div class="spinner"></div>
+    <p id="loading-text">Identifying product...</p>
+  </section>
+
+  <!-- NOT FOUND -->
+  <section id="not-found-section" style="display:none;" class="card">
+    <div style="text-align:center; font-size:48px; margin-bottom:12px;">🔍</div>
+    <h2 style="text-align:center;">Product Not Found</h2>
+    <p style="text-align:center; margin:8px 0 4px;">We couldn't confidently identify this product, so we didn't make a guess.</p>
+    <p id="not-found-msg" style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:20px;"></p>
+    <div style="display:flex; flex-direction:column; gap:10px; max-width:320px; margin:0 auto;">
+      <button class="btn-primary"   onclick="retryCamera()">📷 Retry Scan</button>
+      <button class="btn-secondary" onclick="retryUpload()">🖼 Upload Another Image</button>
+      <button class="btn-secondary" onclick="retrySearch()">🔍 Search by Name</button>
+    </div>
+  </section>
+
+  <!-- INTELLIGENCE -->
+  <section id="intel-section" style="display:none;" class="card">
+
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+      <div>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <span id="r-brand" class="brand-badge"></span>
+          <span id="r-category" class="category-badge"></span>
+        </div>
+        <h2 id="r-name" style="margin-bottom:4px;"></h2>
+        <p  id="r-variant" style="font-size:13px; color:var(--muted);"></p>
+      </div>
+      <span id="r-outcome-badge" class="outcome-badge"></span>
+    </div>
+    <p id="r-outcome-reason" style="color:var(--muted); font-size:14px; margin-bottom:20px; line-height:1.6;"></p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h4>✦ Skin Suitability</h4>
+        <div id="r-skin-tags" class="tags"></div>
+      </div>
+      <div class="info-card">
+        <h4>✦ Finish & Texture</h4>
+        <p id="r-finish"></p>
+      </div>
+    </div>
+
+    <div class="info-card" style="margin-bottom:12px;">
+      <h4>✦ What This Product Does</h4>
+      <div id="r-intent" class="intent-tags"></div>
+      <p  id="r-irritation" style="font-size:13px; color:var(--mixed); margin-top:8px;"></p>
+    </div>
+
+    <div class="info-card" style="margin-bottom:12px;">
+      <h4>✦ Key Ingredients — Plain English</h4>
+      <ul id="r-ingredients" style="list-style:none;"></ul>
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros-box"><h4>👍 What people love</h4><ul id="r-pros"></ul></div>
+      <div class="cons-box"><h4>👎 Common complaints</h4><ul id="r-cons"></ul></div>
+    </div>
+
+    <div id="r-dealbreakers-card" class="info-card" style="margin-bottom:12px;">
+      <h4>⚠️ Deal Breakers</h4>
+      <ul id="r-dealbreakers" style="list-style:none;"></ul>
+    </div>
+
+    <div class="review-intelligence">
+      <h4>💬 What Real Customers Say</h4>
+      <p id="r-sentiment" style="font-size:14px; line-height:1.7; margin-bottom:14px;"></p>
+      <div class="review-grid">
+        <div class="review-box"><h5>Repeated Praise</h5><ul id="r-praise"></ul></div>
+        <div class="review-box"><h5>Repeated Complaints</h5><ul id="r-complaints"></ul></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:10px;">
+        <div style="font-size:13px;"><span style="color:var(--pink); font-weight:600;">Who loves it: </span><span id="r-who-likes"></span></div>
+        <div style="font-size:13px;"><span style="color:var(--pink); font-weight:600;">Who dislikes it: </span><span id="r-who-dislikes"></span></div>
+        <div style="font-size:13px;"><span style="color:var(--pink); font-weight:600;">Why opinions differ: </span><span id="r-why-differs"></span></div>
+      </div>
+    </div>
+
+    <!-- PERSONALIZATION -->
+    <div class="personalize-box">
+      <h3>Want to see how well this fits you?</h3>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Select your skin type — no account required</p>
+      <div class="skin-type-pills">
+        <button class="pill" onclick="selectSkin(this,'dry')">Dry</button>
+        <button class="pill" onclick="selectSkin(this,'oily')">Oily</button>
+        <button class="pill" onclick="selectSkin(this,'combination')">Combination</button>
+        <button class="pill" onclick="selectSkin(this,'sensitive')">Sensitive</button>
+      </div>
+      <div id="fit-results-area" style="display:none;">
+        <div id="fit-grid" class="fit-grid"></div>
+        <div id="fit-detail" style="display:none; background:var(--dark); border:1px solid var(--border); border-radius:12px; padding:14px; margin-top:4px;">
+          <p id="fit-explanation" style="font-size:14px; line-height:1.7;"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALTERNATIVES -->
+    <div id="alt-section" style="display:none; margin-bottom:20px;">
+      <h3 style="font-size:17px; font-weight:700; margin-bottom:6px;">✦ Better Alternatives For You</h3>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">Same purpose, different fit</p>
+      <div id="alt-list" class="alt-cards"></div>
+    </div>
+
+    <button class="btn-secondary" style="display:block; margin:8px auto 0;" onclick="resetApp()">← Scan Another Product</button>
+  </section>
+
+</div>
+<script src="/static/app.js?v=4"></script>
+</body>
+</html>
